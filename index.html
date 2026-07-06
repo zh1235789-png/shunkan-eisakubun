@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>瞬間英作文トレーナー</title>
+<style>
+  :root {
+    --bg: #f0f2f8;
+    --card-bg: #ffffff;
+    --primary: #4f46e5;
+    --primary-dark: #3730a3;
+    --accent: #f59e0b;
+    --text: #1e293b;
+    --text-sub: #64748b;
+    --green: #16a34a;
+    --red: #dc2626;
+    --radius: 16px;
+    --shadow: 0 4px 20px rgba(79,70,229,0.14);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  header { text-align: center; margin-bottom: 14px; }
+  header h1 { font-size: 1.4rem; color: var(--primary); }
+  header p { font-size: 0.8rem; color: var(--text-sub); margin-top: 4px; }
+
+  .stats-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 12px;
+    font-size: 0.78rem;
+    color: var(--text-sub);
+  }
+  .stats-bar span b { color: var(--primary); }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 14px;
+    max-width: 680px;
+  }
+  select, .btn {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid #cbd5e1;
+    background: var(--card-bg);
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--text);
+    font-family: inherit;
+  }
+  select { max-width: 220px; }
+  .btn:hover, select:hover { border-color: var(--primary); }
+  .btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn.danger.active { background: var(--red); border-color: var(--red); }
+
+  .progress-wrap { width: 100%; max-width: 680px; margin-bottom: 14px; }
+  .progress-bar { height: 6px; background: #dbe0ee; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.72rem; color: var(--text-sub); margin-top: 4px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 680px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 32px 28px;
+    text-align: center;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 18px;
+  }
+  .card-tag {
+    font-size: 0.72rem;
+    color: var(--primary);
+    background: #eef0fd;
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    align-self: center;
+  }
+  .ja-text {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .en-text {
+    font-size: 1.25rem;
+    color: var(--primary-dark);
+    line-height: 1.5;
+    border-top: 1px dashed #cbd5e1;
+    padding-top: 16px;
+  }
+  .empty-msg { color: var(--text-sub); font-size: 0.95rem; }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+  .action-row button {
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .reveal-btn { background: var(--primary); color: #fff; }
+  .reveal-btn:hover { background: var(--primary-dark); }
+  .ok-btn { background: #dcfce7; color: var(--green); }
+  .ok-btn:hover { background: #bbf7d0; }
+  .ng-btn { background: #fee2e2; color: var(--red); }
+  .ng-btn:hover { background: #fecaca; }
+  .fav-btn { background: #fff7ed; color: var(--accent); }
+  .fav-btn.favorited { background: var(--accent); color: #fff; }
+
+  .bottom-links {
+    margin-top: 18px;
+    display: flex;
+    gap: 14px;
+    font-size: 0.8rem;
+  }
+  .bottom-links a {
+    color: var(--text-sub);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .bottom-links a:hover { color: var(--primary); }
+
+  .hint { font-size: 0.72rem; color: var(--text-sub); margin-top: 10px; }
+
+  @media (max-width: 480px) {
+    .ja-text { font-size: 1.25rem; }
+    .en-text { font-size: 1.05rem; }
+    .card { padding: 24px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>瞬間英作文トレーナー</h1>
+  <p>日本語を見て声に出す → 答えを見て自己採点</p>
+</header>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<div class="controls">
+  <select id="topicSelect"></select>
+  <button class="btn" id="orderBtn" data-mode="random">🔀 ランダム</button>
+  <button class="btn" id="reviewBtn">🔁 復習のみ</button>
+  <button class="btn" id="shuffleBtn">再シャッフル</button>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-label">
+    <span id="progressLabel">0 / 0</span>
+    <span id="modeLabel"></span>
+  </div>
+</div>
+
+<div class="card" id="card">
+  <div class="card-tag" id="cardTag"></div>
+  <div class="ja-text" id="jaText"></div>
+  <div class="en-text" id="enText" style="display:none;"></div>
+
+  <div class="action-row" id="revealRow">
+    <button class="reveal-btn" id="revealBtn">答えを見る（Space）</button>
+  </div>
+  <div class="action-row" id="judgeRow" style="display:none;">
+    <button class="ng-btn" id="ngBtn">✕ もう一度（←）</button>
+    <button class="fav-btn" id="favBtn">⭐ お気に入り（F）</button>
+    <button class="ok-btn" id="okBtn">◯ できた（→）</button>
+  </div>
+</div>
+
+<div class="bottom-links">
+  <a id="resetLink">進捗をリセット</a>
+</div>
+<div class="hint">キーボード: Space=答えを見る/次へ　←=もう一度　→=できた　F=お気に入り切替</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
