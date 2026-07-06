@@ -66,6 +66,7 @@
   .btn:hover, select:hover { border-color: var(--primary); }
   .btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
   .btn.danger.active { background: var(--red); border-color: var(--red); }
+  #favFilterBtn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
   .progress-wrap { width: 100%; max-width: 680px; margin-bottom: 14px; }
   .progress-bar { height: 6px; background: #dbe0ee; border-radius: 3px; overflow: hidden; }
@@ -171,7 +172,8 @@
 <div class="controls">
   <select id="topicSelect"></select>
   <button class="btn" id="orderBtn" data-mode="random">🔀 ランダム</button>
-  <button class="btn" id="reviewBtn">🔁 復習のみ</button>
+  <button class="btn" id="favFilterBtn">⭐ お気に入りのみ</button>
+  <button class="btn" id="reviewBtn">✕ 復習のみ</button>
   <button class="btn" id="shuffleBtn">再シャッフル</button>
 </div>
 

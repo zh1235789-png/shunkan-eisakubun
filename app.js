@@ -4,6 +4,7 @@
 
   let progress = loadProgress();
   let topicFilter = "__all__";
+  let favOnly = false;
   let reviewOnly = false;
   let orderMode = "random"; // "random" | "sequential"
   let queue = [];
@@ -13,6 +14,7 @@
   const el = {
     topicSelect: document.getElementById("topicSelect"),
     orderBtn: document.getElementById("orderBtn"),
+    favFilterBtn: document.getElementById("favFilterBtn"),
     reviewBtn: document.getElementById("reviewBtn"),
     shuffleBtn: document.getElementById("shuffleBtn"),
     progressFill: document.getElementById("progressFill"),
@@ -82,11 +84,11 @@
     if (topicFilter !== "__all__") {
       pool = pool.filter((s) => s.topic === topicFilter);
     }
+    if (favOnly) {
+      pool = pool.filter((s) => getEntry(s.id).favorited);
+    }
     if (reviewOnly) {
-      pool = pool.filter((s) => {
-        const e = getEntry(s.id);
-        return e.favorited || e.status === "ng";
-      });
+      pool = pool.filter((s) => getEntry(s.id).status === "ng");
     }
     return pool;
   }
@@ -104,25 +106,41 @@
     const total = ALL.length;
     const seen = Object.values(progress).filter((e) => e.seen > 0).length;
     const ok = Object.values(progress).filter((e) => e.status === "ok").length;
-    const favorited = Object.values(progress).filter((e) => e.favorited || e.status === "ng").length;
+    const favCount = Object.values(progress).filter((e) => e.favorited).length;
+    const ngCount = Object.values(progress).filter((e) => e.status === "ng").length;
     el.statsBar.innerHTML =
       `<span>総問題数 <b>${total}</b></span>` +
       `<span>練習済み <b>${seen}</b></span>` +
       `<span>できた <b>${ok}</b></span>` +
-      `<span>要復習 <b>${favorited}</b></span>`;
+      `<span>⭐ お気に入り <b>${favCount}</b></span>` +
+      `<span>✕ 要復習 <b>${ngCount}</b></span>`;
   }
 
   function renderCard() {
     const total = queue.length;
     el.progressLabel.textContent = total === 0 ? "0 / 0" : `${pos + 1} / ${total}`;
     el.progressFill.style.width = total === 0 ? "0%" : `${((pos + 1) / total) * 100}%`;
-    el.modeLabel.textContent = reviewOnly ? "復習モード" : orderMode === "random" ? "ランダム" : "順番";
+
+    const modeParts = [];
+    if (favOnly) modeParts.push("⭐ お気に入り");
+    if (reviewOnly) modeParts.push("✕ 復習");
+    el.modeLabel.textContent = modeParts.length
+      ? modeParts.join(" + ")
+      : orderMode === "random"
+      ? "ランダム"
+      : "順番";
 
     if (total === 0) {
       el.cardTag.textContent = "";
-      el.jaText.innerHTML = `<span class="empty-msg">${
-        reviewOnly ? "復習対象の問題がありません（お気に入りや✕がついた問題がここに表示されます）" : "該当する問題がありません"
-      }</span>`;
+      let emptyMsg = "該当する問題がありません";
+      if (favOnly && reviewOnly) {
+        emptyMsg = "お気に入り かつ ✕ の問題がありません";
+      } else if (favOnly) {
+        emptyMsg = "お気に入りの問題がありません（⭐ボタンで登録できます）";
+      } else if (reviewOnly) {
+        emptyMsg = "復習対象（✕）の問題がありません";
+      }
+      el.jaText.innerHTML = `<span class="empty-msg">${emptyMsg}</span>`;
       el.enText.style.display = "none";
       el.revealRow.style.display = "none";
       el.judgeRow.style.display = "none";
@@ -166,8 +184,8 @@
     const e = getEntry(item.id);
     setEntry(item.id, { status, seen: (e.seen || 0) + 1 });
     renderStats();
-    if (reviewOnly && status === "ok" && !getEntry(item.id).favorited) {
-      // 復習モードでできた問題はキューから外す
+    if (reviewOnly && status === "ok") {
+      // 復習フィルタ中にできた問題は✕でなくなるのでキューから外す
       queue.splice(pos, 1);
       if (queue.length === 0) {
         renderCard();
@@ -199,6 +217,11 @@
     orderMode = orderMode === "random" ? "sequential" : "random";
     el.orderBtn.textContent = orderMode === "random" ? "🔀 ランダム" : "📋 順番";
     el.orderBtn.classList.toggle("active", orderMode === "random");
+    rebuildQueue(false);
+  });
+  el.favFilterBtn.addEventListener("click", () => {
+    favOnly = !favOnly;
+    el.favFilterBtn.classList.toggle("active", favOnly);
     rebuildQueue(false);
   });
   el.reviewBtn.addEventListener("click", () => {
